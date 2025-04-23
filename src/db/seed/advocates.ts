@@ -1,6 +1,3 @@
-import db from "..";
-import { advocates } from "../schema";
-
 const specialties = [
   "Bipolar",
   "LGBTQ",
@@ -30,7 +27,7 @@ const specialties = [
   "Domestic abuse",
 ];
 
-const randomSpecialty = () => {
+const randomSpecialty = (): number[] => {
   const random1 = Math.floor(Math.random() * 24);
   const random2 = Math.floor(Math.random() * (24 - random1)) + random1 + 1;
 
