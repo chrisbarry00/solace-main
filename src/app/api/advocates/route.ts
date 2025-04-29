@@ -1,4 +1,4 @@
-import { asc, desc, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, ilike, or, sql } from 'drizzle-orm';
 import { NextRequest } from 'next/server';
 import db from '@/db';
 import { advocates } from '@/db/schema';
@@ -20,32 +20,33 @@ export async function GET(req: NextRequest): Promise<Response> {
   const sortKey = searchParams.get('sortKey') || 'lastName';
   const sortDirection = searchParams.get('sortDirection') === 'desc' ? 'desc' : 'asc';
   const searchTerm = searchParams.get('searchTerm')?.toLowerCase() || '';
+  const yearsSearch = searchParams.get('yearsSearch') || '';
   const escapedSearch = `%${searchTerm}%`;
   const orderByColumn = VALID_SORT_KEYS[sortKey as keyof typeof VALID_SORT_KEYS] || advocates.lastName;
 
   try {
-    const yearsExpMatch = sql`CAST(
-    ${advocates.yearsOfExperience}
-    AS
-    TEXT
-    )
-    ILIKE
-    ${escapedSearch}`;
+    const yearsExpMatch = sql`${advocates.yearsOfExperience}
+    >=
+    ${yearsSearch}`;
+
     const specialtiesMatch = sql`${advocates.specialties}
     ::TEXT ILIKE
     ${escapedSearch}`;
 
-    const whereClause = searchTerm
-      ? or(
-        ilike(advocates.firstName, escapedSearch),
-        ilike(advocates.lastName, escapedSearch),
-        ilike(advocates.city, escapedSearch),
-        ilike(advocates.degree, escapedSearch),
-        yearsExpMatch,
-        specialtiesMatch
+    const whereClause = searchTerm || yearsSearch
+      ? and(
+        or(
+          ilike(advocates.firstName, escapedSearch),
+          ilike(advocates.lastName, escapedSearch),
+          ilike(advocates.city, escapedSearch),
+          ilike(advocates.degree, escapedSearch),
+          specialtiesMatch
+        ),
+        yearsExpMatch
       )
       : undefined;
 
+    console.log('whereclause', whereClause);
     const data: Advocate[] = await db
       .select()
       .from(advocates)
@@ -66,4 +67,5 @@ export async function GET(req: NextRequest): Promise<Response> {
     console.error('Error fetching paginated advocates:', err);
     return new Response('Failed to fetch advocates', { status: 500 });
   }
+
 }

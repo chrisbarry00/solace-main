@@ -6,6 +6,7 @@ import { Advocate } from '@/advocate';
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [yearsSearch, setYearsSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -18,15 +19,16 @@ export default function Home() {
   const totalPages = totalCount ? Math.ceil(totalCount / limit) : null;
 
   useEffect(() => {
-    setIsLoading(true);
-
     const timeout = setTimeout(() => {
+      setIsLoading(true);
+
       const query = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
         sortKey,
         sortDirection,
         searchTerm,
+        yearsSearch,
       }).toString();
 
       fetch(`/api/advocates?${query}`)
@@ -47,7 +49,7 @@ export default function Home() {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [page, sortKey, sortDirection, searchTerm]);
+  }, [page, sortKey, sortDirection, searchTerm, yearsSearch]);
 
   const handleSort = (key: string) => {
     if (key === sortKey) {
@@ -61,6 +63,11 @@ export default function Home() {
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setPage(1);
+  };
+
+  const handleYearsSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setYearsSearch(e.target.value);
     setPage(1);
   };
 
@@ -109,6 +116,17 @@ export default function Home() {
             Searching for: <span className="font-medium text-blue-800">{searchTerm}</span>
           </p>
         )}
+
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            value={yearsSearch}
+            onChange={handleYearsSearchInputChange}
+            className="border border-gray-300 rounded-md px-4 py-2 w-full max-w-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            placeholder="Minimum Years of Experience"
+          />
+        </div>
+
       </div>
 
       {isLoading ? (
@@ -147,10 +165,12 @@ export default function Home() {
                   idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                 }`}
               >
-                <td className="px-3 py-2">{advocate.firstName}</td>
-                <td className="px-3 py-2">{advocate.lastName}</td>
-                <td className="px-3 py-2">{advocate.city}</td>
-                <td className="px-3 py-2">{advocate.degree}</td>
+                <td
+                  className="px-3 py-2">{highlightSearchTerm(searchTerm, advocate.firstName)}
+                </td>
+                <td className="px-3 py-2">{highlightSearchTerm(searchTerm, advocate.lastName)}</td>
+                <td className="px-3 py-2">{highlightSearchTerm(searchTerm, advocate.city)}</td>
+                <td className="px-3 py-2">{highlightSearchTerm(searchTerm, advocate.degree)}</td>
                 <td className="px-3 py-2">
                   <div className="flex flex-wrap gap-2">
                     {Array.isArray(advocate.specialties) && advocate.specialties.length > 0 ? (
@@ -231,3 +251,26 @@ function SortableHeader({ label, field, sortKey, sortDirection, onSort }: Sortab
     </th>
   );
 }
+
+function highlightSearchTerm(searchTerm: string, text: string) {
+  if (!searchTerm) return <>{text}</>;
+
+  const lowerText = text.toLowerCase();
+  const lowerSearch = searchTerm.toLowerCase();
+
+  const matchIndex = lowerText.indexOf(lowerSearch);
+  if (matchIndex === -1) return <>{text}</>;
+
+  const before = text.slice(0, matchIndex);
+  const match = text.slice(matchIndex, matchIndex + searchTerm.length);
+  const after = text.slice(matchIndex + searchTerm.length);
+
+  return (
+    <>
+      {before}
+      <span style={{ backgroundColor: 'yellow' }}>{match}</span>
+      {after}
+    </>
+  );
+}
+
