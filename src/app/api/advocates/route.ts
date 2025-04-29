@@ -20,7 +20,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const sortKey = searchParams.get('sortKey') || 'lastName';
   const sortDirection = searchParams.get('sortDirection') === 'desc' ? 'desc' : 'asc';
   const searchTerm = searchParams.get('searchTerm')?.toLowerCase() || '';
-  const yearsSearch = searchParams.get('yearsSearch') || '';
+  const yearsSearch = searchParams.get('yearsSearch') || '1';
   const escapedSearch = `%${searchTerm}%`;
   const orderByColumn = VALID_SORT_KEYS[sortKey as keyof typeof VALID_SORT_KEYS] || advocates.lastName;
 
@@ -46,7 +46,6 @@ export async function GET(req: NextRequest): Promise<Response> {
       )
       : undefined;
 
-    console.log('whereclause', whereClause);
     const data: Advocate[] = await db
       .select()
       .from(advocates)
