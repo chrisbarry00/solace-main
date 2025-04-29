@@ -1,54 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Advocate } from '@/advocate';
+import React, { useState } from 'react';
 import AdvocatesTable from '@/app/components/advocates_table';
 import SearchFilters from '@/app/components/search_filters';
+import { useAdvocates } from '@/app/hooks';
 
 export default function Home() {
-  const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState('lastName');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const { advocates, totalCount, isLoading, errorMessage } = useAdvocates({ page, searchTerm, sortKey });
 
   const limit = 10;
   const totalPages = totalCount ? Math.ceil(totalCount / limit) : 0;
-
-  useEffect(() => {
-    setIsLoading(true);
-
-    const timeout = setTimeout(() => {
-      const query = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        sortKey,
-        sortDirection,
-        searchTerm,
-      }).toString();
-
-      fetch(`/api/advocates?${query}`)
-        .then((response) => {
-          if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
-          return response.json();
-        })
-        .then((json) => {
-          setAdvocates(json.data);
-          setTotalCount(json.totalCount ?? null);
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          console.error('Error fetching advocates:', error);
-          setErrorMessage('Failed to load advocates. Please try again later.');
-          setIsLoading(false);
-        });
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, [page, sortKey, sortDirection, searchTerm]);
 
   const handleSort = (key: string) => {
     if (key === sortKey) {
